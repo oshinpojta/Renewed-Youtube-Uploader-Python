@@ -111,6 +111,15 @@ def _filtered_channels(channels, channel_id: str | None):
         yield channel
 
 
+def _resolve_default_channel(channels, channel_id: str | None):
+    if channel_id:
+        for channel in channels:
+            if channel.channel_profile_id == channel_id:
+                return channel
+        return None
+    return channels[0] if channels else None
+
+
 def cmd_constraints() -> None:
     for constraint in list_constraints():
         print(f"[{constraint.key}] {constraint.statement}")
@@ -381,6 +390,64 @@ def cmd_render_preview(
             )
 
 
+def cmd_auto_run(
+    workspace_root: Path,
+    channel_id: str | None,
+    niche_id: str | None,
+    query: str | None,
+) -> None:
+    pipeline, channels = build_pipeline(workspace_root)
+    selected_channel = _resolve_default_channel(channels, channel_id)
+    if selected_channel is None:
+        print("No channel configuration found; cannot run auto command.")
+        return
+
+    selected_niche = niche_id
+    if not selected_niche and selected_channel.niches:
+        selected_niche = selected_channel.niches[0]
+    if selected_niche and selected_niche not in selected_channel.niches:
+        print(
+            f"{selected_channel.channel_profile_id}: requested niche '{selected_niche}' is not mapped; "
+            "falling back to channel default niche."
+        )
+        selected_niche = selected_channel.niches[0] if selected_channel.niches else None
+
+    selected_query = query
+    if not selected_query and selected_niche:
+        blueprints = {
+            current_niche_id: engine.blueprint
+            for current_niche_id, engine in pipeline.deps.niche_planner.engines.items()
+        }
+        trend_map = pipeline.deps.trend_intel.collect(blueprints)
+        seeds = trend_map.get(selected_niche, [])
+        if seeds:
+            selected_query = seeds[0].keyword
+
+    print("auto-run defaults:")
+    print(f"  channel_id={selected_channel.channel_profile_id}")
+    print(f"  niche_id={selected_niche or 'none'}")
+    print(f"  query={selected_query or 'none'}")
+    print("")
+
+    cmd_research_preview(
+        workspace_root=workspace_root,
+        channel_id=selected_channel.channel_profile_id,
+        niche_id=selected_niche,
+        query=selected_query,
+    )
+    print("")
+    cmd_script_preview(
+        workspace_root=workspace_root,
+        channel_id=selected_channel.channel_profile_id,
+        niche_id=selected_niche,
+    )
+    print("")
+    cmd_run_once(
+        workspace_root=workspace_root,
+        channel_id=selected_channel.channel_profile_id,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compliance-first multi-channel YouTube automation.")
     parser.add_argument("--workspace-root", default=".", help="Workspace root path.")
@@ -401,6 +468,7 @@ def build_parser() -> argparse.ArgumentParser:
             "research-preview",
             "script-preview",
             "render-preview",
+            "auto-run",
         ],
         help="Execution mode.",
     )
@@ -432,6 +500,8 @@ def main() -> None:
         cmd_script_preview(workspace_root, args.channel_id, args.niche_id)
     elif args.command == "render-preview":
         cmd_render_preview(workspace_root, args.channel_id, args.niche_id)
+    elif args.command == "auto-run":
+        cmd_auto_run(workspace_root, args.channel_id, args.niche_id, args.query)
     else:
         cmd_run_once(workspace_root, args.channel_id)
 

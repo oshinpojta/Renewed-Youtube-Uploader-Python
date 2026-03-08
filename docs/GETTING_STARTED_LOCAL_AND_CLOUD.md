@@ -99,7 +99,10 @@ python -m src.main model-strategy
 python -m src.main research-preview --channel-id channel_culture_trends
 python -m src.main script-preview --channel-id channel_culture_trends
 python -m src.main render-preview --channel-id channel_culture_trends
+python -m src.main auto-run
 ```
+
+`auto-run` is the single-command path: it runs research/script previews and then executes one upload run using defaults if channel/niche/query are not passed.
 
 ### 3.5 Run pipeline once
 
@@ -116,18 +119,19 @@ python -m src.main metrics
 
 ## 4) Local scheduling options
 
-### Option A: Use Python scheduler wrapper
-
-```bash
-python schedule.py
-```
-
-### Option B: OS scheduler (recommended for production-like local runs)
+### Option A: OS scheduler (recommended for production-like local runs)
 
 - Windows Task Scheduler -> command:
-  - `python -m src.main run-once`
+  - `python -m src.main auto-run`
 - Linux/macOS cron example:
-  - `0 */6 * * * cd /path/to/repo && .venv/bin/python -m src.main run-once`
+  - `0 */6 * * * cd /path/to/repo && .venv/bin/python -m src.main auto-run`
+
+### Option B: Split scheduling (more control)
+
+- Run content/upload loop:
+  - `python -m src.main run-once`
+- Run metrics refresh:
+  - `python -m src.main collect-metrics`
 
 ## 5) Cloud deployment patterns
 

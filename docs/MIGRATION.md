@@ -1,11 +1,19 @@
 # Legacy to Modular Migration
 
-## Legacy entrypoints retained as wrappers
+## Legacy entrypoints removed
 
-- `tiktok.py` -> runs `src.main run-once --channel-id channel_gaming_tech`
-- `reddit.py` -> runs `src.main run-once --channel-id channel_culture_trends`
-- `insta.py` -> runs `src.main run-once --channel-id channel_practical_safety`
-- `schedule.py` -> runs all channels every 12 hours using APScheduler
+Legacy compatibility wrappers were removed from the workspace:
+
+- `tiktok.py`
+- `reddit.py`
+- `insta.py`
+- `schedule.py`
+
+Use direct CLI commands instead:
+
+- all channels once: `python -m src.main run-once`
+- single channel once: `python -m src.main run-once --channel-id <channel_profile_id>`
+- default end-to-end flow (preview + execute): `python -m src.main auto-run`
 
 ## New package layout
 
@@ -20,6 +28,8 @@
 
 ## Legacy files removed as not required
 
+- Legacy wrappers: `tiktok.py`, `reddit.py`, `insta.py`, `schedule.py`
+- Legacy helper scripts: `scripts/run_pipeline.py`, `scripts/local_first.bat`, `scripts/hybrid_plan.bat`
 - Old counter files: `CountSearch*.txt`, `CountTiktokVid*.txt`
 - Old text log: `log.txt`
 - Old sleep/wake helpers: `sleep.bat`, `wake.bat`

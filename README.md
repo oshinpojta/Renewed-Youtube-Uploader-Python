@@ -100,14 +100,6 @@ See: `docs/CONSTRAINTS.md` and `docs/COMPLIANCE_WORKFLOW.md`.
 |  |- BUDGET_OPTIONS.md
 |  |- IMPLEMENTATION_PHASES.md
 |  |- MIGRATION.md
-|- scripts/
-|  |- run_pipeline.py
-|  |- local_first.bat
-|  |- hybrid_plan.bat
-|- tiktok.py   (legacy wrapper -> new pipeline)
-|- reddit.py   (legacy wrapper -> new pipeline)
-|- insta.py    (legacy wrapper -> new pipeline)
-|- schedule.py (legacy wrapper -> APScheduler + new pipeline)
 |- requirements.txt
 ```
 
@@ -250,6 +242,24 @@ python -m src.main script-preview --channel-id channel_culture_trends
 python -m src.main render-preview --channel-id channel_culture_trends
 ```
 
+### Run preview + execute in one command (auto defaults)
+
+```bash
+python -m src.main auto-run
+```
+
+`auto-run` executes, in order:
+
+1. `research-preview`
+2. `script-preview`
+3. `run-once`
+
+If `--channel-id`, `--niche-id`, or `--query` are not provided, it picks safe defaults:
+
+- first configured channel in `config/channels.yaml`
+- first niche mapped to that channel
+- first trend seed keyword for that niche
+
 ## Logs and Analytics Data
 
 Detailed logs are now generated for planning, uploads, monitoring, retries, and metrics collection.
@@ -302,12 +312,12 @@ Implemented in `src/orchestrator/upload_scheduler.py`:
 
 ## Legacy Wrappers
 
-Legacy filenames remain for compatibility:
+Legacy compatibility wrappers were removed to keep the workspace clean.
+Use direct CLI commands instead:
 
-- `tiktok.py` -> `channel_gaming_tech`
-- `reddit.py` -> `channel_culture_trends`
-- `insta.py` -> `channel_practical_safety`
-- `schedule.py` -> all channels every 12 hours
+- all channels once: `python -m src.main run-once`
+- single channel once: `python -m src.main run-once --channel-id <channel_profile_id>`
+- one-command default flow: `python -m src.main auto-run`
 
 ## Budget Guidance
 

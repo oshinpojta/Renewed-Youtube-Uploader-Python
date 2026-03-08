@@ -68,3 +68,9 @@ python -m src.main research-preview --channel-id channel_culture_trends
 python -m src.main script-preview --channel-id channel_culture_trends
 python -m src.main render-preview --channel-id channel_culture_trends
 ```
+
+Or use one command that selects defaults when args are missing:
+
+```bash
+python -m src.main auto-run
+```
