@@ -1,0 +1,20 @@
+providers:
+  gemini_api:
+    api_key: "PASTE_GEMINI_API_KEY"
+    base_url: "https://generativelanguage.googleapis.com"
+    model: "gemini-2.5-flash"
+
+  groq_api:
+    api_key: "PASTE_GROQ_API_KEY"
+    base_url: "https://api.groq.com/openai/v1"
+    model: "llama-3.3-70b-versatile"
+
+  openrouter_api:
+    api_key: "PASTE_OPENROUTER_API_KEY"
+    base_url: "https://openrouter.ai/api/v1"
+    model: "openrouter/free"
+
+  huggingface_api:
+    api_key: "PASTE_HF_TOKEN"
+    base_url: "https://router.huggingface.co/v1"
+    model: "openrouter/auto"

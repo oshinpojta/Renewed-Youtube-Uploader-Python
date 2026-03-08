@@ -1,0 +1,73 @@
+model_generation_strategy:
+  provider_priority:
+    - kling_ai
+    - seedance_2
+    - veo3
+    - sora_api
+
+  fallback_order:
+    kling_ai:
+      - seedance_2
+      - veo3
+      - sora_api
+    seedance_2:
+      - kling_ai
+      - veo3
+      - sora_api
+    veo3:
+      - kling_ai
+      - seedance_2
+      - sora_api
+    sora_api:
+      - kling_ai
+      - seedance_2
+      - veo3
+
+  per_niche_provider_order:
+    niche_a_roblox_ugc_explainers:
+      - kling_ai
+      - seedance_2
+      - veo3
+    niche_b_ai_workflow_micro_tutorials:
+      - kling_ai
+      - sora_api
+      - seedance_2
+    niche_c_internet_culture_context:
+      - seedance_2
+      - kling_ai
+      - veo3
+    niche_d_practical_law_and_safety:
+      - kling_ai
+      - sora_api
+      - seedance_2
+    niche_e_micro_doc_public_domain:
+      - seedance_2
+      - kling_ai
+      - veo3
+    niche_f_religion_culture_legends_ghost_lore:
+      - seedance_2
+      - kling_ai
+      - veo3
+
+  # Guardrails should reflect your budget and risk tolerance.
+  cost_guardrails:
+    kling_ai:
+      max_cost_per_second_usd: 0.12
+      max_clip_cost_usd: 8.0
+      max_monthly_budget_usd: 25.0
+      allow_trial_only: false
+    seedance_2:
+      max_cost_per_second_usd: 0.15
+      max_clip_cost_usd: 10.0
+      max_monthly_budget_usd: 25.0
+      allow_trial_only: false
+    veo3:
+      max_cost_per_second_usd: 0.25
+      max_clip_cost_usd: 12.0
+      max_monthly_budget_usd: 25.0
+      allow_trial_only: true
+    sora_api:
+      max_cost_per_second_usd: 0.12
+      max_clip_cost_usd: 8.0
+      max_monthly_budget_usd: 25.0
+      allow_trial_only: false

@@ -1,0 +1,44 @@
+research_provider_strategy:
+  provider_priority:
+    - tavily_api
+    - brave_search_api
+    - wikimedia_api
+
+  fallback_order:
+    tavily_api:
+      - brave_search_api
+      - wikimedia_api
+    brave_search_api:
+      - tavily_api
+      - wikimedia_api
+    wikimedia_api:
+      - tavily_api
+      - brave_search_api
+
+  per_niche_provider_order:
+    niche_a_roblox_ugc_explainers:
+      - brave_search_api
+      - tavily_api
+      - wikimedia_api
+    niche_b_ai_workflow_micro_tutorials:
+      - tavily_api
+      - brave_search_api
+      - wikimedia_api
+    niche_c_internet_culture_context:
+      - tavily_api
+      - brave_search_api
+      - wikimedia_api
+    niche_d_practical_law_and_safety:
+      - tavily_api
+      - wikimedia_api
+      - brave_search_api
+    niche_e_micro_doc_public_domain:
+      - wikimedia_api
+      - tavily_api
+      - brave_search_api
+    niche_f_religion_culture_legends_ghost_lore:
+      - wikimedia_api
+      - tavily_api
+      - brave_search_api
+
+  max_results: 5

@@ -32,7 +32,11 @@ Pipeline modules are organized by responsibility:
 - `src/storage/`  
   SQLite job/performance store and encrypted token store.
 - `src/media/`  
-  Media factory (FFmpeg-ready render path).
+  Media factory, model routing, provider adapters, and async generation service.
+- `src/content/`  
+  Text provider routing + storyline/script generation.
+- `src/research/`  
+  Web search provider routing, grounding, and citation extraction.
 - `src/config/`  
   Typed config models and YAML loaders.
 
@@ -70,16 +74,26 @@ See: `docs/CONSTRAINTS.md` and `docs/COMPLIANCE_WORKFLOW.md`.
 |  |- youtube/
 |  |- storage/
 |  |- media/
+|  |- content/
+|  |- research/
 |  |- config/
 |- config/
 |  |- channels.yaml
 |  |- niches.yaml
 |  |- deployment_profiles.yaml
+|  |- model_provider_strategy.yaml
+|  |- model_api_keys.local.example.yaml
+|  |- text_provider_strategy.yaml
+|  |- research_provider_strategy.yaml
+|  |- text_api_keys.local.example.yaml
+|  |- research_api_keys.local.example.yaml
 |- docs/
 |  |- ARCHITECTURE.md
 |  |- GETTING_STARTED_LOCAL_AND_CLOUD.md
 |  |- CONSTRAINTS.md
 |  |- COMPLIANCE_WORKFLOW.md
+|  |- MODEL_ADAPTER_STRATEGY.md
+|  |- CONTENT_GENERATION_AND_RESEARCH.md
 |  |- LOGGING_AND_METRICS.md
 |  |- SCHEDULING.md
 |  |- OAUTH_ONBOARDING.md
@@ -144,6 +158,22 @@ Edit `config/niches.yaml` for:
 
 See `config/deployment_profiles.yaml`.
 
+### 4) Text generation providers
+
+Configure:
+
+- `config/text_provider_strategy.yaml`
+- `config/text_api_keys.local.yaml` (local, git-ignored)
+- `config/text_api_keys.local.example.yaml` (template)
+
+### 5) Research providers
+
+Configure:
+
+- `config/research_provider_strategy.yaml`
+- `config/research_api_keys.local.yaml` (local, git-ignored)
+- `config/research_api_keys.local.example.yaml` (template)
+
 ## Commands
 
 ### Print non-negotiable constraints
@@ -196,6 +226,30 @@ Optional single channel:
 python -m src.main collect-metrics --channel-id channel_culture_trends
 ```
 
+### Inspect provider adapter strategy (priority/fallback/cost checks)
+
+```bash
+python -m src.main model-strategy
+```
+
+### Preview web-research grounding (no upload)
+
+```bash
+python -m src.main research-preview --channel-id channel_culture_trends
+```
+
+### Preview generated scripts (no upload)
+
+```bash
+python -m src.main script-preview --channel-id channel_culture_trends
+```
+
+### Preview render output path/mode (no upload)
+
+```bash
+python -m src.main render-preview --channel-id channel_culture_trends
+```
+
 ## Logs and Analytics Data
 
 Detailed logs are now generated for planning, uploads, monitoring, retries, and metrics collection.
@@ -210,6 +264,32 @@ Detailed logs are now generated for planning, uploads, monitoring, retries, and 
   - `performance_metrics`
 
 See `docs/LOGGING_AND_METRICS.md` for field details and analysis usage.
+
+## Model Adapter Strategy
+
+The media layer now supports configurable model selection with:
+
+- `provider_priority`
+- fallback order
+- per-niche provider order
+- provider-level cost guardrails
+
+Use:
+
+- `config/model_provider_strategy.yaml`
+- `config/model_api_keys.local.yaml` (local, git-ignored)
+- `config/model_api_keys.local.example.yaml` (template)
+
+See `docs/MODEL_ADAPTER_STRATEGY.md` for full setup.
+
+Text and research generation are configured separately with:
+
+- `config/text_provider_strategy.yaml`
+- `config/research_provider_strategy.yaml`
+- `config/text_api_keys.local.yaml` / `config/text_api_keys.local.example.yaml`
+- `config/research_api_keys.local.yaml` / `config/research_api_keys.local.example.yaml`
+
+See `docs/CONTENT_GENERATION_AND_RESEARCH.md` for full setup and fallback behavior.
 
 ## Scheduling Strategy
 

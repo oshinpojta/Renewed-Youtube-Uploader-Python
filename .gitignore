@@ -1,1 +1,6 @@
 .venv/
+data/
+outputs/
+config/model_api_keys.local.yaml
+config/text_api_keys.local.yaml
+config/research_api_keys.local.yaml

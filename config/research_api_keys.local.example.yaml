@@ -1,0 +1,13 @@
+providers:
+  tavily_api:
+    api_key: "PASTE_TAVILY_API_KEY"
+    base_url: "https://api.tavily.com"
+
+  brave_search_api:
+    api_key: "PASTE_BRAVE_API_KEY"
+    base_url: "https://api.search.brave.com"
+
+  # Wikimedia can run without a key; leave api_key empty for public search endpoint.
+  wikimedia_api:
+    api_key: ""
+    base_url: "https://en.wikipedia.org"

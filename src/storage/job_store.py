@@ -78,10 +78,53 @@ class JobStore:
                     likes INTEGER,
                     comments INTEGER,
                     duration_seconds INTEGER,
+                    text_provider TEXT,
+                    research_provider TEXT,
+                    generation_provider TEXT,
+                    generation_model TEXT,
+                    citation_count INTEGER,
                     payload_json TEXT NOT NULL
                 )
                 """
             )
+            self._ensure_column(
+                conn,
+                table="video_metric_snapshots",
+                column="text_provider",
+                ddl="TEXT",
+            )
+            self._ensure_column(
+                conn,
+                table="video_metric_snapshots",
+                column="research_provider",
+                ddl="TEXT",
+            )
+            self._ensure_column(
+                conn,
+                table="video_metric_snapshots",
+                column="generation_provider",
+                ddl="TEXT",
+            )
+            self._ensure_column(
+                conn,
+                table="video_metric_snapshots",
+                column="generation_model",
+                ddl="TEXT",
+            )
+            self._ensure_column(
+                conn,
+                table="video_metric_snapshots",
+                column="citation_count",
+                ddl="INTEGER",
+            )
+
+    @staticmethod
+    def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        existing = {str(row[1]) for row in rows}
+        if column in existing:
+            return
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
     def upsert_job(self, job: UploadJob) -> None:
         metadata_json = json.dumps(job.metadata)
@@ -252,6 +295,11 @@ class JobStore:
         likes: int,
         comments: int,
         duration_seconds: Optional[int],
+        text_provider: Optional[str],
+        research_provider: Optional[str],
+        generation_provider: Optional[str],
+        generation_model: Optional[str],
+        citation_count: Optional[int],
         payload: Dict,
     ) -> None:
         with self._connect() as conn:
@@ -259,8 +307,10 @@ class JobStore:
                 """
                 INSERT INTO video_metric_snapshots (
                     captured_at_utc, channel_profile_id, niche_id, job_id, video_id, title,
-                    publish_at_utc, views, likes, comments, duration_seconds, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    publish_at_utc, views, likes, comments, duration_seconds,
+                    text_provider, research_provider, generation_provider, generation_model, citation_count,
+                    payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     datetime.utcnow().isoformat(),
@@ -274,6 +324,11 @@ class JobStore:
                     likes,
                     comments,
                     duration_seconds,
+                    text_provider,
+                    research_provider,
+                    generation_provider,
+                    generation_model,
+                    citation_count,
                     json.dumps(payload, default=str),
                 ),
             )

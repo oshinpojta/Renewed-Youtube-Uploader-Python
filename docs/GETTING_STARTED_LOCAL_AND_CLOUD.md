@@ -49,6 +49,30 @@ Edit:
 
 - `config/channels.yaml`
 - `config/niches.yaml`
+- `config/model_provider_strategy.yaml`
+- `config/text_provider_strategy.yaml`
+- `config/research_provider_strategy.yaml`
+
+Create local model API keys file:
+
+```bash
+cp config/model_api_keys.local.example.yaml config/model_api_keys.local.yaml
+```
+
+Create local text/research API key files:
+
+```bash
+cp config/text_api_keys.local.example.yaml config/text_api_keys.local.yaml
+cp config/research_api_keys.local.example.yaml config/research_api_keys.local.yaml
+```
+
+Then fill provider API keys in:
+
+- `config/model_api_keys.local.yaml`
+- `config/text_api_keys.local.yaml`
+- `config/research_api_keys.local.yaml`
+
+This file is git-ignored and intended for local secrets only.
 
 At minimum ensure each channel has:
 
@@ -71,6 +95,10 @@ python -m src.main onboard --channel-id <channel_profile_id>
 ```bash
 python -m src.main constraints
 python -m src.main plan
+python -m src.main model-strategy
+python -m src.main research-preview --channel-id channel_culture_trends
+python -m src.main script-preview --channel-id channel_culture_trends
+python -m src.main render-preview --channel-id channel_culture_trends
 ```
 
 ### 3.5 Run pipeline once
@@ -135,6 +163,8 @@ So deploy it as a scheduled worker/job that runs commands.
 - `config/channels.yaml`
 - `config/niches.yaml`
 - `config/deployment_profiles.yaml`
+- `config/text_provider_strategy.yaml`
+- `config/research_provider_strategy.yaml`
 - `client_secrets.json`
 - `data/tokens/` (after onboarding)
 

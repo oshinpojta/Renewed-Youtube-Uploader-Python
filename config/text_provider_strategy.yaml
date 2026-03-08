@@ -1,0 +1,53 @@
+text_generation_strategy:
+  provider_priority:
+    - gemini_api
+    - groq_api
+    - openrouter_api
+    - huggingface_api
+
+  fallback_order:
+    gemini_api:
+      - groq_api
+      - openrouter_api
+      - huggingface_api
+    groq_api:
+      - gemini_api
+      - openrouter_api
+      - huggingface_api
+    openrouter_api:
+      - gemini_api
+      - groq_api
+      - huggingface_api
+    huggingface_api:
+      - openrouter_api
+      - gemini_api
+      - groq_api
+
+  per_niche_provider_order:
+    niche_a_roblox_ugc_explainers:
+      - gemini_api
+      - groq_api
+      - openrouter_api
+    niche_b_ai_workflow_micro_tutorials:
+      - groq_api
+      - gemini_api
+      - openrouter_api
+    niche_c_internet_culture_context:
+      - gemini_api
+      - openrouter_api
+      - groq_api
+    niche_d_practical_law_and_safety:
+      - gemini_api
+      - groq_api
+      - huggingface_api
+    niche_e_micro_doc_public_domain:
+      - gemini_api
+      - openrouter_api
+      - huggingface_api
+    niche_f_religion_culture_legends_ghost_lore:
+      - gemini_api
+      - groq_api
+      - openrouter_api
+
+  max_tokens: 1400
+  temperature: 0.65

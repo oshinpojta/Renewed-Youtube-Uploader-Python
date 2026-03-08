@@ -23,6 +23,7 @@ Stored in `data/jobs.db`:
   Structured event history by `job_id`, `channel_profile_id`, and `niche_id`.
 - `video_metric_snapshots`  
   Periodic snapshots of views/likes/comments/duration by video.
+  Includes `text_provider`, `research_provider`, `generation_provider`, `generation_model`, and `citation_count`.
 - `performance_metrics`  
   Internal CTR/retention aggregates used by the scheduler.
 
@@ -35,6 +36,10 @@ Typical event payload includes:
 - `channel_profile_id`, `channel_name`
 - `job_id`, `video_id`, `niche_id`, `brief_id`
 - `title`, `seed_keyword`
+- `generation_provider`, `generation_model`, `generation_mode`
+- `generation_task_id`, `render_latency_seconds`
+- `text_provider`, `research_provider`, `citation_count`
+- `script_id`, `script_scene_count`
 - `scheduled_publish_at_utc`
 - `status`, `retry_count`
 - `duration_seconds`, `aspect_ratio`
@@ -60,6 +65,7 @@ python -m src.main collect-metrics --channel-id channel_culture_trends
 With channel+niche+publish-time level telemetry, you can:
 
 - compare average views/likes/comments per niche
+- compare text/research/video provider combinations by niche
 - measure the impact of publish hour and day windows
 - detect low-performing metadata patterns early
 - identify which niches deserve more volume or format shifts

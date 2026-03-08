@@ -32,6 +32,7 @@ class PipelineEventLogger:
             "timezone": channel.timezone,
         }
         if job is not None:
+            metadata = job.metadata or {}
             row.update(
                 {
                     "job_id": job.job_id,
@@ -46,6 +47,17 @@ class PipelineEventLogger:
                     "duration_seconds": job.media.duration_seconds,
                     "aspect_ratio": job.media.aspect_ratio,
                     "contains_synthetic_media": job.media.contains_synthetic_media,
+                    "generation_provider": job.media.generation_provider,
+                    "generation_model": job.media.generation_model,
+                    "generation_mode": job.media.generation_mode,
+                    "generation_notes": job.media.generation_notes,
+                    "generation_task_id": job.media.generation_task_id,
+                    "render_latency_seconds": job.media.render_latency_seconds,
+                    "text_provider": metadata.get("text_provider", ""),
+                    "research_provider": metadata.get("research_provider", ""),
+                    "citation_count": metadata.get("citation_count", 0),
+                    "script_id": metadata.get("script_id", ""),
+                    "script_scene_count": metadata.get("script_scene_count", 0),
                 }
             )
         if payload:

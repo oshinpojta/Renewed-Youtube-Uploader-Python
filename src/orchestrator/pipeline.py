@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from src.content.script_builder import ScriptBuildInput, ScriptBuilder
+from src.content.story_builder import StoryBuilder
 from src.compliance.pre_upload import PreUploadComplianceChecker, PreUploadContext, build_recent_title_set
 from src.compliance.remediation import RemediationEngine
 from src.config.models import ChannelProfile, JobStatus, UploadJob
@@ -13,6 +15,8 @@ from src.media.factory import MediaFactory
 from src.orchestrator.niche_planner import NichePlanner
 from src.orchestrator.trend_intel import TrendIntelCollector
 from src.orchestrator.upload_scheduler import UploadTimeScheduler
+from src.research.grounding import ResearchGroundingService
+from src.research.research_router import ResearchRouter
 from src.storage.event_logger import PipelineEventLogger
 from src.storage.job_store import JobStore
 from src.youtube.monitor import YouTubePostPublishMonitor
@@ -24,6 +28,9 @@ class PipelineDependencies:
     trend_intel: TrendIntelCollector
     niche_planner: NichePlanner
     media_factory: MediaFactory
+    research_router: ResearchRouter | None
+    story_builder: StoryBuilder | None
+    script_builder: ScriptBuilder | None
     pre_upload_checker: PreUploadComplianceChecker
     scheduler: UploadTimeScheduler
     job_store: JobStore
@@ -74,13 +81,69 @@ class ComplianceFirstPipeline:
         jobs: List[UploadJob] = []
         recent_titles = build_recent_title_set(self.deps.job_store.list_recent_titles(channel.channel_profile_id))
         performance = self.deps.job_store.average_performance_by_hour(channel.channel_profile_id)
+        grounding = ResearchGroundingService()
 
         for brief in briefs:
-            media = self.deps.media_factory.render(brief, source_clips=[])
+            research_provider = "none"
+            research_notes: List[str] = []
+            citation_urls = list(brief.evidence_links)
+            citation_snippets: List[str] = []
+            if self.deps.research_router:
+                query = f"{brief.seed_keyword} {brief.niche_id.replace('_', ' ')}"
+                routed_research = self.deps.research_router.search_for_niche(
+                    niche_id=brief.niche_id,
+                    query=query,
+                    max_results=5,
+                )
+                research_provider = routed_research.bundle.provider
+                research_notes = list(routed_research.bundle.notes)
+                citation_urls = list(
+                    dict.fromkeys(
+                        citation_urls + grounding.citation_urls(routed_research.bundle.hits, limit=5)
+                    )
+                )
+                citation_snippets = grounding.citation_snippets(routed_research.bundle.hits, limit=5)
+            brief.evidence_links = citation_urls
+
+            generated_script = None
+            text_provider = "template"
+            text_notes: List[str] = []
+            if self.deps.story_builder and self.deps.script_builder:
+                story = self.deps.story_builder.build_story(
+                    brief=brief,
+                    citation_summaries=citation_snippets,
+                )
+                generated_script = self.deps.script_builder.build(
+                    ScriptBuildInput(
+                        brief=brief,
+                        story=story,
+                        citations=citation_urls,
+                        citation_snippets=citation_snippets,
+                    )
+                )
+                text_provider = generated_script.text_provider
+                text_notes = list(generated_script.generation_notes)
+
+            media = self.deps.media_factory.render(
+                brief,
+                source_clips=[],
+                generated_script=generated_script,
+            )
+            min_citations = 2 if brief.niche_id in {
+                "niche_c_internet_culture_context",
+                "niche_d_practical_law_and_safety",
+                "niche_e_micro_doc_public_domain",
+                "niche_f_religion_culture_legends_ghost_lore",
+            } else 1
             decision = self.deps.pre_upload_checker.evaluate(
                 brief=brief,
                 media=media,
-                context=PreUploadContext(recent_titles=recent_titles, require_source_credits=True),
+                generated_script=generated_script,
+                context=PreUploadContext(
+                    recent_titles=recent_titles,
+                    require_source_credits=True,
+                    min_citation_count=min_citations,
+                ),
             )
             status = JobStatus.PLANNED if decision.passed and not decision.needs_human_review else JobStatus.NEEDS_REVIEW
             if not decision.passed:
@@ -92,9 +155,18 @@ class ComplianceFirstPipeline:
                 now_utc=datetime.now(tz=timezone.utc),
             )
             publish_at = selection.publish_at_utc
+            title = generated_script.title if generated_script else brief.working_title
+            if generated_script and generated_script.scenes:
+                outline_for_description = [scene.narration for scene in generated_script.scenes]
+            else:
+                outline_for_description = brief.outline
+            description_lines = outline_for_description + [""]
+            if citation_urls:
+                description_lines += ["Sources:"] + citation_urls[:5] + [""]
+            description_lines += brief.disclaimers
             metadata = {
-                "title": brief.working_title,
-                "description": "\n".join(brief.outline + [""] + brief.disclaimers),
+                "title": title,
+                "description": "\n".join(description_lines),
                 "tags": [brief.seed_keyword, brief.niche_id, "automation"],
                 "category_id": "22",
                 "compliance_warnings": "; ".join(decision.warnings),
@@ -102,6 +174,19 @@ class ComplianceFirstPipeline:
                 "schedule_source": selection.source,
                 "schedule_local_hour": str(selection.local_hour),
                 "schedule_score": f"{selection.score:.4f}",
+                "text_provider": text_provider,
+                "text_generation_notes": "; ".join(text_notes),
+                "research_provider": research_provider,
+                "research_notes": "; ".join(research_notes),
+                "citation_count": len(citation_urls),
+                "script_id": generated_script.script_id if generated_script else "",
+                "script_scene_count": len(generated_script.scenes) if generated_script else 0,
+                "generation_provider": media.generation_provider,
+                "generation_model": media.generation_model,
+                "generation_mode": media.generation_mode,
+                "generation_notes": "; ".join(media.generation_notes),
+                "video_generation_task_id": media.generation_task_id,
+                "render_latency_seconds": media.render_latency_seconds,
             }
             job = UploadJob(
                 job_id=f"job_{uuid.uuid4().hex[:12]}",
@@ -124,6 +209,15 @@ class ComplianceFirstPipeline:
                     "schedule_source": selection.source,
                     "schedule_local_hour": selection.local_hour,
                     "schedule_score": selection.score,
+                    "text_provider": text_provider,
+                    "research_provider": research_provider,
+                    "citation_count": len(citation_urls),
+                    "generation_provider": media.generation_provider,
+                    "generation_model": media.generation_model,
+                    "generation_mode": media.generation_mode,
+                    "generation_notes": media.generation_notes,
+                    "video_generation_task_id": media.generation_task_id,
+                    "render_latency_seconds": media.render_latency_seconds,
                 },
             )
             jobs.append(job)
@@ -203,6 +297,7 @@ class ComplianceFirstPipeline:
                         channel,
                         job,
                         payload={
+                            "retry_reason": "; ".join(decision.reasons),
                             "next_media_path": action.remediated_media_path,
                             "next_attempt_at_utc": (
                                 action.next_attempt_at_utc.isoformat()

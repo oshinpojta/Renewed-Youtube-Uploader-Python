@@ -44,6 +44,7 @@ class MetricsCollector:
             video_id = row.get("video_id")
             if not video_id:
                 continue
+            metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
             try:
                 snapshot = self.monitor.fetch_video_snapshot(channel, video_id)
             except Exception as exc:
@@ -83,6 +84,11 @@ class MetricsCollector:
                 likes=payload["likes"],
                 comments=payload["comments"],
                 duration_seconds=duration_seconds,
+                text_provider=str(metadata.get("text_provider", "")),
+                research_provider=str(metadata.get("research_provider", "")),
+                generation_provider=str(metadata.get("generation_provider", "")),
+                generation_model=str(metadata.get("generation_model", "")),
+                citation_count=int(metadata.get("citation_count", 0) or 0),
                 payload=snapshot,
             )
             self.event_logger.log_video_metrics(
@@ -90,7 +96,14 @@ class MetricsCollector:
                 job_id=row.get("job_id") or "",
                 video_id=video_id,
                 niche_id=row.get("niche_id") or "",
-                snapshot=payload,
+                snapshot={
+                    **payload,
+                    "text_provider": str(metadata.get("text_provider", "")),
+                    "research_provider": str(metadata.get("research_provider", "")),
+                    "generation_provider": str(metadata.get("generation_provider", "")),
+                    "generation_model": str(metadata.get("generation_model", "")),
+                    "citation_count": int(metadata.get("citation_count", 0) or 0),
+                },
             )
             self.job_store.add_job_event(
                 event_type="video_metrics_collected",
