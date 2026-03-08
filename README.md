@@ -1,290 +1,243 @@
-# Renewed YouTube Uploader (Python)
+# Renewed YouTube Uploader (Compliance-First, Multi-Channel)
 
-Automation scripts for collecting short videos from multiple sources (TikTok, Reddit, Instagram), preparing video output, and uploading to YouTube Studio.
+This repository now implements an API-first YouTube automation system that:
 
-This repository is currently optimized for a **Windows desktop automation setup** that uses `pyautogui` click coordinates and command-line tools such as `ffmpeg`.
+- plans videos for multiple niches,
+- routes jobs to multiple channel accounts,
+- schedules publish times using channel windows + fallback strategy,
+- enforces pre-upload and post-upload compliance checks,
+- and applies safe remediation for technical failures.
 
-## Table of Contents
+The previous UI-click automation scripts are preserved as compatibility wrappers, but execution is now centered on the `src/` modular pipeline.
 
-- [Project Overview](#project-overview)
-- [How the Current Code Works](#how-the-current-code-works)
-- [Project Structure](#project-structure)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [One-Time Setup](#one-time-setup)
-- [How to Run](#how-to-run)
-- [How Merging Works](#how-merging-works)
-- [Scheduling and Batch Files](#scheduling-and-batch-files)
-- [Logs and Counters](#logs-and-counters)
-- [Troubleshooting](#troubleshooting)
-- [Security and Compliance Notes](#security-and-compliance-notes)
-- [Current Limitations](#current-limitations)
+## Core Goals
 
-## Project Overview
+- Build original, non-repetitive content workflows for multiple niches.
+- Support multi-account channel operations with OAuth token isolation.
+- Respect YouTube policies and API constraints by design.
+- Stay budget-friendly (`$0-$25/month`) with local, hybrid, and hosted profiles.
 
-The codebase automates three major steps:
+## New Architecture
 
-1. **Fetch** videos from different sources:
-   - TikTok search pages
-   - Reddit video posts (`v.redd.it`)
-   - Instagram hashtag media
-2. **Prepare output media**:
-   - Merge video+audio for Reddit posts
-   - Concatenate multiple Instagram clips into one output
-3. **Upload to YouTube Studio**:
-   - Browser/UI automation with `pyautogui` and fixed click coordinates
+Pipeline modules are organized by responsibility:
 
-This is not using the official YouTube upload API in the active flow. Uploading is done by automating browser clicks in YouTube Studio.
+- `src/orchestrator/`  
+  Trend intake, niche planning, slot scheduling, pipeline execution.
+- `src/niches/`  
+  Niche brief engines and content template logic.
+- `src/compliance/`  
+  Constraints, pre-upload checks, post-upload checks, remediation.
+- `src/youtube/`  
+  OAuth auth manager, uploader, onboarding handling, processing monitor.
+- `src/storage/`  
+  SQLite job/performance store and encrypted token store.
+- `src/media/`  
+  Media factory (FFmpeg-ready render path).
+- `src/config/`  
+  Typed config models and YAML loaders.
 
-## How the Current Code Works
+## Niche Engines (6)
 
-### 1) TikTok flow (`tiktok.py`)
+1. Roblox and UGC explainers
+2. AI workflow micro tutorials
+3. Internet culture context
+4. Practical law and safety scenarios
+5. Public-domain micro documentaries
+6. Religion, culture, legends, and ghost lore (sensitive-topic guarded)
 
-`upload_tiktok()` runs automatically and also gets called by other scripts.
+Niche definitions live in `config/niches.yaml`.
 
-Main behavior:
+## Compliance-First Rules Implemented
 
-- Iterates through four channel/content groups (`i = 0..3`).
-- Uses `CountSearch{i}.txt` to pick the next search term from large hardcoded tag lists.
-- Opens YouTube Studio and switches account using hardcoded screen coordinates.
-- Launches Chrome through `pyppeteer`, opens TikTok search URL, and extracts up to 2 video sources from page elements.
-- Downloads each selected video to `vids/output.mp4` via `IDMan` downloader integration.
-- Builds title using `CountTiktokVid{i}.txt`, uploads with UI automation, waits, then deletes `vids/output.mp4`.
+- No direct YouTube channel create endpoint assumptions.
+- Private-first upload strategy.
+- No blind policy-evasion retries.
+- Rights/originality/metadata checks before upload.
+- `containsSyntheticMedia` support for altered/synthetic disclosure.
+- Sensitive-topic language and disclaimer guardrails for religion/legend/ghost content.
 
-Important note:
+See: `docs/CONSTRAINTS.md` and `docs/COMPLIANCE_WORKFLOW.md`.
 
-- A **merge-multiple-TikTok-clips** approach exists in the script but is inside a triple-quoted block (commented), so it is **not active** in the current run path.
-
-### 2) Reddit flow (`reddit.py`)
-
-`upload_reddit()`:
-
-- Authenticates with Reddit via `praw` (credentials are hardcoded in current code).
-- Picks a random subreddit from a predefined list.
-- Scans hot posts and selects `v.redd.it` video URLs.
-- Calls Reddit JSON endpoint to extract:
-  - `fallback_url` for video
-  - corresponding `DASH_audio.mp4` for audio
-- Downloads to:
-  - `vids/video.mp4`
-  - `vids/audio.mp3` (extension name, content is fetched from DASH audio URL)
-- Merges audio+video into `vids/output.mp4` using `ffmpeg`.
-- Uploads via YouTube Studio UI automation, logs title/time to `log.txt`, then cleans temporary files.
-
-At script end, random logic runs:
-
-- If random number is `1`, run Reddit upload.
-- Otherwise, fallback to `upload_tiktok()`.
-
-### 3) Instagram flow (`insta.py`)
-
-Behavior:
-
-- Reads `CountInstaVids.txt`, increments counter, and creates upload title.
-- Uses `instaloader` command to fetch videos for a hashtag.
-- Filters downloaded files to `.mp4`.
-- Writes a concat list in `videonames.txt`.
-- Uses `ffmpeg -f concat` to combine clips into `vids/output.mp4`.
-- Deletes temporary files, uploads merged output with `pyautogui`, then deletes `vids/output.mp4`.
-
-Important note:
-
-- The script references hardcoded Windows user paths (for example under `C:\Users\Ritesh\...`), so path updates are usually required per machine.
-
-### 4) Scheduler flow (`schedule.py`)
-
-Behavior:
-
-- Calls `upload_tiktok()` once immediately.
-- Registers a 12-hour repeating interval job with APScheduler.
-- In each cycle, performs some UI clicks/pixel checks, then runs `tiktok.bat`.
-
-## Project Structure
+## Repository Layout
 
 ```text
 .
-|- tiktok.py        # TikTok scraping/downloading/upload flow
-|- reddit.py        # Reddit video+audio fetch, merge, upload (or TikTok fallback)
-|- insta.py         # Instagram hashtag fetch, clip concat, upload
-|- schedule.py      # Interval scheduler for repeated runs
-|- tiktok.bat
-|- reddit.bat
-|- insta.bat
-|- scheduler.bat
-|- wake.bat
-|- sleep.bat
-|- CountSearch0.txt
-|- CountSearch1.txt
-|- CountSearch2.txt
-|- CountSearch3.txt
-|- CountTiktokVid0.txt
-|- CountTiktokVid1.txt
-|- CountTiktokVid2.txt
-|- CountTiktokVid3.txt
-|- log.txt
-|- client_secrets.json  # currently not part of active upload flow
+|- src/
+|  |- main.py
+|  |- orchestrator/
+|  |- niches/
+|  |- compliance/
+|  |- youtube/
+|  |- storage/
+|  |- media/
+|  |- config/
+|- config/
+|  |- channels.yaml
+|  |- niches.yaml
+|  |- deployment_profiles.yaml
+|- docs/
+|  |- ARCHITECTURE.md
+|  |- GETTING_STARTED_LOCAL_AND_CLOUD.md
+|  |- CONSTRAINTS.md
+|  |- COMPLIANCE_WORKFLOW.md
+|  |- LOGGING_AND_METRICS.md
+|  |- SCHEDULING.md
+|  |- OAUTH_ONBOARDING.md
+|  |- BUDGET_OPTIONS.md
+|  |- IMPLEMENTATION_PHASES.md
+|  |- MIGRATION.md
+|- scripts/
+|  |- run_pipeline.py
+|  |- local_first.bat
+|  |- hybrid_plan.bat
+|- tiktok.py   (legacy wrapper -> new pipeline)
+|- reddit.py   (legacy wrapper -> new pipeline)
+|- insta.py    (legacy wrapper -> new pipeline)
+|- schedule.py (legacy wrapper -> APScheduler + new pipeline)
+|- requirements.txt
 ```
-
-## Requirements
-
-### OS and runtime
-
-- Windows 10/11 (current scripts use Windows-only shell commands and paths)
-- Python 3.8+ (recommended)
-- Google Chrome installed at expected path
-
-### External tools
-
-- `ffmpeg` available in system `PATH`
-- `instaloader` CLI available
-- Internet Download Manager + Python integration used by `from idm import IDMan`
-
-### Python packages used in code
-
-- `requests`
-- `praw`
-- `pyautogui`
-- `pyppeteer`
-- `apscheduler`
 
 ## Installation
 
+For full startup and deployment steps, see:
+
+- `docs/GETTING_STARTED_LOCAL_AND_CLOUD.md`
+
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+On Windows:
+
+```bat
 python -m venv .venv
 .venv\Scripts\activate
-pip install requests praw pyautogui pyppeteer apscheduler instaloader
+pip install -r requirements.txt
 ```
 
-If `from idm import IDMan` fails, install/configure the IDM Python integration used in your environment.
+## Configuration
 
-## One-Time Setup
+### 1) Channels
 
-1. Create required folders/files if missing:
-   - `vids/`
-   - `CountSearch0.txt` ... `CountSearch3.txt` (numeric values)
-   - `CountTiktokVid0.txt` ... `CountTiktokVid3.txt` (numeric values)
-   - `CountInstaVids.txt` (numeric value; required by `insta.py`)
-   - `log.txt`
-2. Update hardcoded local paths in scripts to your own machine paths.
-3. Update credentials:
-   - Reddit API credentials in `reddit.py`
-   - Instagram login values in `insta.py`
-4. Log in to required web accounts in Chrome:
-   - TikTok (if needed for content loading)
-   - YouTube channels used for upload
-5. Recalibrate all `pyautogui.click(x, y)` coordinates for your monitor resolution, scaling, and browser layout.
+Edit `config/channels.yaml`:
 
-## How to Run
+- `channel_profile_id` (unique key)
+- `oauth_client_secrets_file`
+- `token_store_key` (one encrypted token per channel profile)
+- `timezone`
+- allowed `niches`
+- `schedule_windows` + `fallback_hours`
 
-### TikTok upload automation
+### 2) Niches
+
+Edit `config/niches.yaml` for:
+
+- formats
+- trend triggers
+- source policy
+- style rules
+- sensitive-topic flag
+
+### 3) Deployment profile metadata
+
+See `config/deployment_profiles.yaml`.
+
+## Commands
+
+### Print non-negotiable constraints
 
 ```bash
-python tiktok.py
+python -m src.main constraints
 ```
 
-or:
+### Authorize one channel profile (OAuth)
 
 ```bash
-tiktok.bat
+python -m src.main onboard --channel-id channel_culture_trends
 ```
 
-### Reddit (with random TikTok fallback)
+### Plan jobs only (no upload)
 
 ```bash
-python reddit.py
+python -m src.main plan
 ```
 
-### Instagram merge-and-upload
+### Run planning + upload flow once
 
 ```bash
-python insta.py
+python -m src.main run-once
 ```
 
-### Scheduled TikTok runs
+Note: if no real rendered media is attached yet, jobs are automatically routed to `needs_review` instead of uploading empty files.
+
+### Show budget deployment options
 
 ```bash
-python schedule.py
+python -m src.main budget
 ```
 
-or:
+### Show per-channel pipeline metrics
 
 ```bash
-scheduler.bat
+python -m src.main metrics
 ```
 
-## How Merging Works
-
-### Reddit merge (audio + video mux)
-
-The script fetches separate media streams and combines without re-encoding:
+### Collect latest YouTube video metric snapshots
 
 ```bash
-ffmpeg -i vids\video.mp4 -i vids\audio.mp3 -c copy vids\output.mp4
+python -m src.main collect-metrics
 ```
 
-### Instagram merge (multiple clips concatenation)
-
-The script builds `videonames.txt` with lines like:
-
-```text
-file clip1.mp4
-file clip2.mp4
-```
-
-Then concatenates:
+Optional single channel:
 
 ```bash
-ffmpeg -f concat -i videonames.txt -c copy vids\output.mp4
+python -m src.main collect-metrics --channel-id channel_culture_trends
 ```
 
-### TikTok merge status
+## Logs and Analytics Data
 
-- Current active path uploads one downloaded clip at a time.
-- A merge-based TikTok path exists in commented code and is not active by default.
+Detailed logs are now generated for planning, uploads, monitoring, retries, and metrics collection.
 
-## Scheduling and Batch Files
+- JSONL logs:
+  - `data/logs/pipeline_events.jsonl`
+  - `data/logs/video_metrics.jsonl`
+- SQLite tables:
+  - `jobs`
+  - `job_events`
+  - `video_metric_snapshots`
+  - `performance_metrics`
 
-- `tiktok.bat`: runs `python tiktok.py`, then waits.
-- `reddit.bat`: runs `python reddit.py`.
-- `insta.bat`: runs `python insta.py`.
-- `scheduler.bat`: waits, runs `python schedule.py`, waits.
-- `wake.bat`: simple chain (`reddit.bat` then sleep trigger).
-- `sleep.bat`: calls Windows sleep command.
+See `docs/LOGGING_AND_METRICS.md` for field details and analysis usage.
 
-## Logs and Counters
+## Scheduling Strategy
 
-- `CountSearch*.txt`: remembers which search term index to use next per channel group.
-- `CountTiktokVid*.txt`: increments video numbering in generated titles.
-- `CountInstaVids.txt`: increments Instagram upload numbering.
-- `log.txt`: Reddit upload history (title and timestamp).
+Implemented in `src/orchestrator/upload_scheduler.py`:
 
-## Troubleshooting
+- uses channel-local weekly windows,
+- applies fallback slots,
+- scores candidate hours by historical CTR/retention,
+- and selects best slot with earliest tie-break.
 
-- **Upload clicks are wrong**: Re-record and replace all `pyautogui` coordinates.
-- **TikTok extraction fails**: Selector/class names may have changed; update query selectors in `tiktok.py`.
-- **No media output**: Verify `ffmpeg` is installed and in `PATH`.
-- **Instagram command fails**: Confirm `instaloader` is installed and login/session values are valid.
-- **Script hangs**: Current flow uses long fixed sleeps; reduce/increase delays based on network and machine speed.
-- **Windows command errors on macOS/Linux**: Scripts currently depend on Windows commands such as `del`, `move`, `.bat`, and `taskkill`.
+## Legacy Wrappers
 
-## Security and Compliance Notes
+Legacy filenames remain for compatibility:
 
-- Current code stores credentials directly in source files. Move them to environment variables or a local config file excluded from version control.
-- Automated scraping/downloading/uploading may be subject to platform terms (TikTok/Instagram/Reddit/YouTube). Use responsibly and verify policy compliance.
-- Do not commit secrets (`client_secrets.json`, API keys, usernames/passwords) to public repositories.
+- `tiktok.py` -> `channel_gaming_tech`
+- `reddit.py` -> `channel_culture_trends`
+- `insta.py` -> `channel_practical_safety`
+- `schedule.py` -> all channels every 12 hours
 
-## Current Limitations
+## Budget Guidance
 
-- Heavy reliance on fixed UI coordinates and static sleeps.
-- Hardcoded machine-specific paths and account assumptions.
-- Minimal error handling and retry strategy in some flows.
-- No centralized config file or dependency lock file.
-- No test suite.
+- Local-first: `~$0-$5`
+- Hybrid low-cost: `~$5-$20`
+- Hosted budget cap: `~$10-$25`
 
----
+See `docs/BUDGET_OPTIONS.md` for details.
 
-If you want, the next step can be a **production-ready cleanup**:
-- move credentials to `.env`,
-- add `requirements.txt`,
-- make paths/config configurable,
-- and replace UI-based upload with official YouTube Data API upload flow.
+## Important Policy Note
+
+This system is built to reduce policy risk, not to bypass platform enforcement.  
+Any policy-risk, copyright-risk, or ambiguous moderation outcome is routed to human review.

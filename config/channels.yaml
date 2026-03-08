@@ -1,0 +1,64 @@
+channels:
+  - channel_profile_id: channel_gaming_tech
+    channel_name: "Gaming Tech Pulse"
+    oauth_client_secrets_file: "client_secrets.json"
+    token_store_key: "channel_gaming_tech"
+    timezone: "Asia/Kolkata"
+    default_privacy_status: "private"
+    niches:
+      - niche_a_roblox_ugc_explainers
+      - niche_b_ai_workflow_micro_tutorials
+    schedule_windows:
+      - day_of_week: monday
+        start_hour: 18
+        end_hour: 22
+      - day_of_week: wednesday
+        start_hour: 18
+        end_hour: 22
+      - day_of_week: saturday
+        start_hour: 10
+        end_hour: 14
+    fallback_hours: [12, 19, 21]
+
+  - channel_profile_id: channel_culture_trends
+    channel_name: "Culture Context Studio"
+    oauth_client_secrets_file: "client_secrets.json"
+    token_store_key: "channel_culture_trends"
+    timezone: "Asia/Kolkata"
+    default_privacy_status: "private"
+    niches:
+      - niche_c_internet_culture_context
+      - niche_e_micro_doc_public_domain
+      - niche_f_religion_culture_legends_ghost_lore
+    schedule_windows:
+      - day_of_week: tuesday
+        start_hour: 17
+        end_hour: 21
+      - day_of_week: thursday
+        start_hour: 17
+        end_hour: 21
+      - day_of_week: sunday
+        start_hour: 11
+        end_hour: 15
+    fallback_hours: [9, 18, 20]
+
+  - channel_profile_id: channel_practical_safety
+    channel_name: "Practical Safety Desk"
+    oauth_client_secrets_file: "client_secrets.json"
+    token_store_key: "channel_practical_safety"
+    timezone: "Asia/Kolkata"
+    default_privacy_status: "private"
+    niches:
+      - niche_d_practical_law_and_safety
+      - niche_b_ai_workflow_micro_tutorials
+    schedule_windows:
+      - day_of_week: monday
+        start_hour: 7
+        end_hour: 10
+      - day_of_week: friday
+        start_hour: 7
+        end_hour: 10
+      - day_of_week: sunday
+        start_hour: 19
+        end_hour: 22
+    fallback_hours: [8, 13, 20]

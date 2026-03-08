@@ -1,0 +1,30 @@
+deployment_profiles:
+  - profile_id: option_local_first
+    title: "Local First"
+    monthly_cost_range_usd: "$0-$5"
+    components:
+      - "Windows Task Scheduler or cron"
+      - "Local Python worker"
+      - "Local FFmpeg rendering"
+      - "SQLite (data/jobs.db)"
+    fit_for: "Cheapest startup path with single-machine operation."
+
+  - profile_id: option_hybrid_low_cost
+    title: "Hybrid Low Cost"
+    monthly_cost_range_usd: "$5-$20"
+    components:
+      - "Cloud scheduler/trigger"
+      - "Local or low-cost remote rendering worker"
+      - "Encrypted token storage"
+      - "Object storage for artifacts"
+    fit_for: "Reliable orchestration while keeping media rendering costs low."
+
+  - profile_id: option_hosted_budget_cap
+    title: "Hosted Budget Cap"
+    monthly_cost_range_usd: "$10-$25"
+    components:
+      - "Always-free or low-cost VM runner"
+      - "Cloud object storage"
+      - "Scheduled worker and queue"
+      - "Health checks and log shipping"
+    fit_for: "24/7 hosted workflows within strict budget ceiling."

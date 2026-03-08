@@ -1,0 +1,103 @@
+niches:
+  - niche_id: niche_a_roblox_ugc_explainers
+    display_name: "Roblox and UGC Explainers"
+    formats:
+      - "short_45_to_90"
+      - "long_4_to_8"
+    source_policy: "Use first-party gameplay capture, licensed clips, and original commentary only."
+    trend_triggers:
+      - "roblox user generated games"
+      - "creator game updates"
+      - "ugc item economy"
+      - "best roblox strategy"
+      - "roblox challenge trends"
+    style_rules:
+      - "Hook in first 2 seconds."
+      - "Show concrete strategy outcome."
+      - "No unlicensed repost clips."
+
+  - niche_id: niche_b_ai_workflow_micro_tutorials
+    display_name: "AI Workflow Micro Tutorials"
+    formats:
+      - "short_45_to_90"
+      - "long_4_to_8"
+    source_policy: "Only demonstrate legal tool workflows with original scripts and screen demos."
+    trend_triggers:
+      - "ai automation for students"
+      - "ai productivity prompt"
+      - "small business ai workflow"
+      - "research automation with ai"
+      - "no code ai operations"
+    style_rules:
+      - "One workflow per episode."
+      - "Measure time saved and quality checks."
+      - "Disclose synthetic voice where needed."
+
+  - niche_id: niche_c_internet_culture_context
+    display_name: "Internet Culture Context"
+    formats:
+      - "short_45_to_90"
+      - "long_6_to_10"
+    source_policy: "Use transformed commentary format with narrative and context."
+    trend_triggers:
+      - "fandom trend explained"
+      - "viral meme origin"
+      - "kpop fandom trend"
+      - "anime internet culture"
+      - "global trend remix"
+    style_rules:
+      - "Add historical context and meaningful analysis."
+      - "No raw reupload compilations."
+      - "Cite references in description."
+
+  - niche_id: niche_d_practical_law_and_safety
+    display_name: "Practical Law and Safety Scenarios"
+    formats:
+      - "short_60"
+      - "long_6_to_10"
+    source_policy: "Educational scenarios with explicit legal-disclaimer metadata."
+    trend_triggers:
+      - "consumer rights basics"
+      - "digital privacy laws"
+      - "cyber safety checklist"
+      - "self defense legal limits"
+      - "online scam warning signs"
+    style_rules:
+      - "Always include legal disclaimer."
+      - "Avoid absolute legal claims."
+      - "Encourage professional consultation."
+
+  - niche_id: niche_e_micro_doc_public_domain
+    display_name: "Public Domain Micro Documentary"
+    formats:
+      - "short_60"
+      - "long_6_to_10"
+    source_policy: "Use public-domain or explicitly licensed assets with source credits."
+    trend_triggers:
+      - "lost history explained"
+      - "science timeline story"
+      - "historical maps breakdown"
+      - "forgotten inventions"
+      - "archive footage analysis"
+    style_rules:
+      - "Lead with curiosity gap."
+      - "Use date and source overlays."
+      - "Prioritize factual clarity."
+
+  - niche_id: niche_f_religion_culture_legends_ghost_lore
+    display_name: "Religion, Culture, Legends and Ghost Lore"
+    formats:
+      - "short_60"
+      - "long_6_to_10"
+    source_policy: "Comparative educational storytelling with respectful framing and source-backed context."
+    trend_triggers:
+      - "religious stories explained"
+      - "cultural legends around the world"
+      - "ghost folklore origin"
+      - "mythology symbolism"
+      - "sacred traditions and meaning"
+    style_rules:
+      - "Stay neutral and respectful across beliefs."
+      - "Do not present supernatural claims as verified facts."
+      - "Include disclaimer and source attribution."
+    is_sensitive_topic: true

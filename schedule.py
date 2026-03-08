@@ -1,42 +1,19 @@
-import os
 from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-import datetime
-from datetime import datetime
-import pyautogui
+from pathlib import Path
 
-from tiktok import upload_tiktok
+from src.main import cmd_run_once
 
-now = datetime.now()
-print(now)
-sched = BlockingScheduler()
-def model():
-    pyautogui.click(x=1325,y=100, clicks=2)
-    pyautogui.sleep(60)
-    pyautogui.click(415,540)
-    pyautogui.sleep(10)
-    color = (42, 156, 243)
-    print(pyautogui.pixel(825,320))
-    if not (pyautogui.pixelMatchesColor(825, 320, color, tolerance = 30)):
-        pyautogui.click(825,320)
-    pyautogui.sleep(10)
-    print(pyautogui.pixel(825,320))
-    pyautogui.click(1095,125)
-    pyautogui.sleep(10)
-    os.system("tiktok.bat")
-    
-pyautogui.click(x=1325,y=100, clicks=2)
-pyautogui.sleep(60)
-pyautogui.click(415,540)
-pyautogui.sleep(10)
-color = (42, 156, 243)
-print(pyautogui.pixel(825,320))
-if not (pyautogui.pixelMatchesColor(825, 320, color, tolerance = 30)):
-    pyautogui.click(825,320)
-pyautogui.sleep(10)
-print(pyautogui.pixel(825,320))
-pyautogui.click(1095,125)
-pyautogui.sleep(10)
-upload_tiktok()
-sched.add_job(model, 'interval', hours=12, misfire_grace_time=3600)
-sched.start()
+
+def run_all_channels() -> None:
+    cmd_run_once(workspace_root=Path("."), channel_id=None)
+
+
+def main() -> None:
+    scheduler = BlockingScheduler()
+    run_all_channels()
+    scheduler.add_job(run_all_channels, trigger="interval", hours=12, misfire_grace_time=3600)
+    scheduler.start()
+
+
+if __name__ == "__main__":
+    main()
