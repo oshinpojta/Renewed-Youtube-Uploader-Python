@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
+import time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -24,10 +29,12 @@ class KlingVideoProvider(VideoGenerationProvider):
     def submit(self, request: ProviderVideoRequest) -> ProviderVideoJob:
         base_url = self.config.base_url.rstrip("/") or "https://api.kling.ai"
         url = f"{base_url}/v1/videos/text2video"
+        requested_duration = max(int(request.duration_seconds), 5)
+        normalized_duration = 10 if requested_duration >= 8 else 5
         payload = {
             "model": self.config.model,
             "prompt": request.prompt,
-            "duration": min(max(request.duration_seconds, 5), 30),
+            "duration": normalized_duration,
             "aspect_ratio": request.aspect_ratio,
             "audio": request.include_audio,
         }
@@ -50,15 +57,48 @@ class KlingVideoProvider(VideoGenerationProvider):
         return download_to_file(
             output_url,
             destination,
-            headers={"Authorization": f"Bearer {self.config.api_key}"},
+            headers={"Authorization": f"Bearer {self._auth_token()}"},
             timeout_seconds=120,
         )
 
     def _headers(self) -> Dict[str, str]:
         return {
-            "Authorization": f"Bearer {self.config.api_key}",
+            "Authorization": f"Bearer {self._auth_token()}",
             "Content-Type": "application/json",
         }
+
+    def _auth_token(self) -> str:
+        access_key = self.config.api_key.strip()
+        secret_key = self.config.secret_key.strip()
+        if not secret_key:
+            return access_key
+
+        now = int(time.time())
+        header = {"alg": "HS256", "typ": "JWT"}
+        payload = {
+            "iss": access_key,
+            "exp": now + 1800,
+            "nbf": now - 5,
+        }
+        encoded_header = self._base64url_json(header)
+        encoded_payload = self._base64url_json(payload)
+        signing_input = f"{encoded_header}.{encoded_payload}"
+        signature = hmac.new(
+            secret_key.encode("utf-8"),
+            signing_input.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        encoded_signature = self._base64url_bytes(signature)
+        return f"{signing_input}.{encoded_signature}"
+
+    @staticmethod
+    def _base64url_json(blob: Dict[str, Any]) -> str:
+        raw = json.dumps(blob, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        return KlingVideoProvider._base64url_bytes(raw)
+
+    @staticmethod
+    def _base64url_bytes(blob: bytes) -> str:
+        return base64.urlsafe_b64encode(blob).rstrip(b"=").decode("ascii")
 
     @staticmethod
     def _extract_task_id(data: Dict[str, Any]) -> str:

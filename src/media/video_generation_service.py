@@ -166,6 +166,7 @@ class VideoGenerationService:
             api_key=cred.api_key,
             base_url=cred.base_url,
             model=selected_model or cred.model,
+            secret_key=cred.secret_key,
         )
         return provider_cls(config)
 

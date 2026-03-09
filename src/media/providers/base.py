@@ -13,6 +13,7 @@ class ProviderVideoConfig:
     api_key: str
     base_url: str
     model: str
+    secret_key: str = ""
     timeout_seconds: int = 30
 
 
@@ -65,7 +66,11 @@ def post_json(
     timeout_seconds: int = 30,
 ) -> Dict[str, Any]:
     response = requests.post(url, json=payload, headers=headers, timeout=timeout_seconds)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        details = response.text[:600]
+        raise RuntimeError(f"{exc}; response_body={details}") from exc
     data = response.json()
     if not isinstance(data, dict):
         raise ValueError("Video provider returned invalid JSON payload.")
@@ -74,7 +79,11 @@ def post_json(
 
 def get_json(url: str, headers: Dict[str, str], timeout_seconds: int = 30) -> Dict[str, Any]:
     response = requests.get(url, headers=headers, timeout=timeout_seconds)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        details = response.text[:600]
+        raise RuntimeError(f"{exc}; response_body={details}") from exc
     data = response.json()
     if not isinstance(data, dict):
         raise ValueError("Video provider returned invalid JSON payload.")

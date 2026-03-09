@@ -1,7 +1,8 @@
 providers:
   kling_ai:
-    api_key: "PASTE_KLING_API_KEY"
-    base_url: "https://api.kling.ai"
+    api_key: "PASTE_KLING_ACCESS_KEY_OR_API_KEY"
+    secret_key: "PASTE_KLING_SECRET_KEY_IF_USING_AK_SK"
+    base_url: "https://api.klingai.com"
     model: "kling-2.6-pro"
 
   seedance_2:

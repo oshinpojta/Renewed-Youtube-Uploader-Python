@@ -132,6 +132,7 @@ def load_model_api_keys(config_path: Path) -> Dict[str, ModelProviderCredential]
         output[provider] = ModelProviderCredential(
             provider=provider,
             api_key=str(row.get("api_key", "")).strip(),
+            secret_key=str(row.get("secret_key", "")).strip(),
             base_url=str(row.get("base_url", "")).strip(),
             model=str(row.get("model", "")).strip(),
         )

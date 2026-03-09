@@ -34,7 +34,7 @@ PROVIDER_CAPABILITIES: Dict[str, ProviderCapability] = {
     ),
     "kling_ai": ProviderCapability(
         supports_audio=True,
-        max_duration_seconds=30,
+        max_duration_seconds=10,
         estimated_cost_per_second_usd=0.09,
         supports_api_automation=True,
     ),

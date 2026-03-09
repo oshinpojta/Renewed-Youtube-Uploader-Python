@@ -70,6 +70,7 @@ class ContentBrief:
     channel_profile_id: str
     seed_keyword: str
     generated_at_utc: datetime
+    channel_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -181,6 +182,7 @@ class ModelProviderStrategy:
 class ModelProviderCredential:
     provider: str
     api_key: str
+    secret_key: str = ""
     base_url: str = ""
     model: str = ""
 

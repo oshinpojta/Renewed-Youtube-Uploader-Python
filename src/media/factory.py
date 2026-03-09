@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import re
+import shutil
 import subprocess
+from datetime import timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -14,6 +17,7 @@ from src.media.video_generation_service import VideoGenerationRequest, VideoGene
 class MediaFactoryConfig:
     workspace_root: Path
     output_dir: Path
+    generated_videos_dir: Optional[Path] = None
     default_duration_seconds: int = 55
     enable_ffmpeg: bool = True
     enable_model_generation: bool = True
@@ -25,6 +29,10 @@ class MediaFactory:
     def __init__(self, config: MediaFactoryConfig) -> None:
         self.config = config
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
+        self.generated_videos_dir = self.config.generated_videos_dir or (
+            self.config.workspace_root / "generated_videos"
+        )
+        self.generated_videos_dir.mkdir(parents=True, exist_ok=True)
 
     def render(
         self,
@@ -50,6 +58,13 @@ class MediaFactory:
             require_audio = generated_script.requires_audio
 
         if self.config.enable_ffmpeg and source_clips:
+            generation_provider = "source_clips"
+            generation_model = "ffmpeg_copy"
+            output_path = self._build_sorted_output_path(
+                brief=brief,
+                provider=generation_provider,
+                model=generation_model,
+            )
             concat_file = self.config.output_dir / f"{brief.brief_id}_concat.txt"
             concat_lines = [f"file '{clip.as_posix()}'" for clip in source_clips]
             concat_file.write_text("\n".join(concat_lines), encoding="utf-8")
@@ -84,11 +99,29 @@ class MediaFactory:
                 and self.config.model_router
                 and self.config.video_generation_service
             ):
+                selection_duration = requested_duration
+                selection_prefix_notes: List[str] = []
                 selection = self.config.model_router.select_for_niche(
                     niche_id=brief.niche_id,
-                    duration_seconds=requested_duration,
+                    duration_seconds=selection_duration,
                     require_audio=require_audio,
                 )
+                if selection.provider == "none" and selection_duration > 10:
+                    for capped_duration in (30, 20, 15, 10, 8):
+                        if capped_duration >= selection_duration:
+                            continue
+                        capped_selection = self.config.model_router.select_for_niche(
+                            niche_id=brief.niche_id,
+                            duration_seconds=capped_duration,
+                            require_audio=require_audio,
+                        )
+                        if capped_selection.provider != "none":
+                            selection = capped_selection
+                            selection_prefix_notes.append(
+                                f"duration_clamped_for_provider_limits:{selection_duration}s->{capped_duration}s"
+                            )
+                            selection_duration = capped_duration
+                            break
                 generation_provider = selection.provider
                 generation_model = selection.model
                 try:
@@ -97,27 +130,44 @@ class MediaFactory:
                         provider=selection.provider,
                         model=selection.model,
                         prompt=prompt,
-                        duration_seconds=requested_duration,
+                        duration_seconds=selection_duration,
                         aspect_ratio="9:16"
                         if "shorts" in " ".join(brief.target_formats).lower()
                         else "16:9",
                         include_audio=require_audio,
                     )
                     artifact = self.config.video_generation_service.generate_with_fallback(request)
-                    output_path = artifact.output_path
                     generation_provider = artifact.provider
                     generation_model = artifact.model
+                    output_path = self._build_sorted_output_path(
+                        brief=brief,
+                        provider=artifact.provider or selection.provider,
+                        model=artifact.model or selection.model or artifact.mode,
+                    )
+                    self._move_output_artifact(artifact.output_path, output_path)
                     generation_mode = artifact.mode
                     generation_task_id = artifact.task_id
                     render_latency_seconds = artifact.latency_seconds
-                    generation_notes = selection.notes + artifact.notes
+                    generation_notes = selection_prefix_notes + selection.notes + artifact.notes
                     duration = artifact.duration_seconds
                 except Exception as exc:
+                    output_path = self._build_sorted_output_path(
+                        brief=brief,
+                        provider=generation_provider,
+                        model=generation_model or "render_failed",
+                    )
                     output_path.unlink(missing_ok=True)
                     duration = requested_duration
                     generation_mode = "render_failed"
-                    generation_notes = selection.notes + [f"model_generation_failed: {exc}"]
+                    generation_notes = selection_prefix_notes + selection.notes + [
+                        f"model_generation_failed: {exc}"
+                    ]
             else:
+                output_path = self._build_sorted_output_path(
+                    brief=brief,
+                    provider="none",
+                    model="render_failed",
+                )
                 output_path.unlink(missing_ok=True)
                 duration = requested_duration
                 generation_mode = "render_failed"
@@ -138,6 +188,34 @@ class MediaFactory:
             generation_task_id=generation_task_id,
             render_latency_seconds=render_latency_seconds,
         )
+
+    @staticmethod
+    def _slug_token(value: str, fallback: str) -> str:
+        token = re.sub(r"[^a-z0-9]+", "_", (value or "").lower()).strip("_")
+        return token or fallback
+
+    @staticmethod
+    def _move_output_artifact(source: Path, destination: Path) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if source == destination:
+            return
+        shutil.move(str(source), str(destination))
+
+    def _build_sorted_output_path(self, brief: ContentBrief, provider: str, model: str) -> Path:
+        timestamp_token = brief.generated_at_utc.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        channel_token = self._slug_token(
+            brief.channel_name or brief.channel_profile_id,
+            "channel",
+        )
+        niche_token = self._slug_token(brief.niche_id, "niche")
+        provider_token = self._slug_token(provider, "unknown_provider")
+        model_token = self._slug_token(model, "unknown_model")
+        filename = (
+            f"{channel_token}__{niche_token}__{brief.brief_id}_{timestamp_token}.mp4"
+        )
+        destination = self.generated_videos_dir / provider_token / model_token / filename
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        return destination
 
     @staticmethod
     def _probe_duration(path: Path) -> int | None:

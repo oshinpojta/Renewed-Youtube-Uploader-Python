@@ -24,5 +24,7 @@ class NichePlanner:
             if not seeds:
                 continue
             for seed in seeds[:briefs_per_niche]:
-                briefs.append(self.engines[niche_id].build_brief(channel.channel_profile_id, seed))
+                brief = self.engines[niche_id].build_brief(channel.channel_profile_id, seed)
+                brief.channel_name = channel.channel_name
+                briefs.append(brief)
         return briefs
