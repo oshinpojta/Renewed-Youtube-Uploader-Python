@@ -12,6 +12,7 @@ from src.compliance.pre_upload import PreUploadComplianceChecker, PreUploadConte
 from src.compliance.remediation import RemediationEngine
 from src.config.models import ChannelProfile, JobStatus, UploadJob
 from src.media.factory import MediaFactory
+from src.media.validation import validate_rendered_media
 from src.orchestrator.niche_planner import NichePlanner
 from src.orchestrator.trend_intel import TrendIntelCollector
 from src.orchestrator.upload_scheduler import UploadTimeScheduler
@@ -232,18 +233,45 @@ class ComplianceFirstPipeline:
                 payload={"reason": f"status={job.status.value}"},
             )
             return job
-        media_path = Path(job.media.media_path)
-        if not media_path.exists() or media_path.stat().st_size == 0:
+        blocked_modes = {"placeholder", "render_failed", "local_fallback"}
+        if job.media.generation_mode in blocked_modes:
             job.status = JobStatus.NEEDS_REVIEW
             job.last_error = (
-                "Rendered media is missing/empty. Attach real source clips before upload execution."
+                f"Render mode '{job.media.generation_mode}' is blocked from upload; generate real media first."
             )
             self.deps.job_store.upsert_job(job)
             self._record_event(
                 "job_needs_review",
                 channel,
                 job,
-                payload={"reason": "media_missing_or_empty", "media_path": job.media.media_path},
+                payload={
+                    "reason": "blocked_generation_mode",
+                    "generation_mode": job.media.generation_mode,
+                },
+            )
+            return job
+        media_path = Path(job.media.media_path)
+        media_validation = validate_rendered_media(
+            media_path,
+            require_audio=True,
+            min_duration_seconds=6.0,
+        )
+        if not media_validation.is_valid:
+            job.status = JobStatus.NEEDS_REVIEW
+            job.last_error = (
+                "Rendered media failed validation "
+                f"({media_validation.reason}). Attach playable media before upload execution."
+            )
+            self.deps.job_store.upsert_job(job)
+            self._record_event(
+                "job_needs_review",
+                channel,
+                job,
+                payload={
+                    "reason": "media_validation_failed",
+                    "media_path": job.media.media_path,
+                    "validation_reason": media_validation.reason,
+                },
             )
             return job
 

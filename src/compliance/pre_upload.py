@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, List, Set
 
 from src.config.models import ComplianceDecision, ContentBrief, GeneratedScript, RenderedMedia
+from src.media.validation import validate_rendered_media
 
 
 SENSITIVE_BANNED_PHRASES = {
@@ -28,6 +30,8 @@ FACTUAL_NICHES = {
     "niche_e_micro_doc_public_domain",
     "niche_f_religion_culture_legends_ghost_lore",
 }
+
+NON_PUBLISHABLE_GENERATION_MODES = {"placeholder", "render_failed", "local_fallback"}
 
 
 @dataclass
@@ -70,6 +74,20 @@ class PreUploadComplianceChecker:
             violations.append("Rendered duration is too short for stable delivery.")
         if media.duration_seconds > 600:
             warnings.append("Rendered duration is very long; verify pacing and retention risks.")
+        if media.generation_mode in NON_PUBLISHABLE_GENERATION_MODES:
+            violations.append(
+                f"Render mode '{media.generation_mode}' is blocked for publishing."
+            )
+        require_audio = generated_script.requires_audio if generated_script is not None else True
+        media_validation = validate_rendered_media(
+            Path(media.media_path),
+            require_audio=require_audio,
+            min_duration_seconds=6.0,
+        )
+        if not media_validation.is_valid:
+            violations.append(
+                f"Rendered media validation failed: {media_validation.reason}."
+            )
 
         if generated_script is not None:
             self._evaluate_script_quality(generated_script, media, context, violations, warnings)

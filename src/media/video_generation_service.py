@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from src.config.models import ModelProviderCredential
+from src.media.validation import validate_rendered_media
 from src.media.providers import (
     KlingVideoProvider,
     ProviderVideoConfig,
@@ -70,11 +71,25 @@ class VideoGenerationService:
             return artifact
         except Exception as exc:
             fallback_path = self.output_dir / f"{request.request_id}_{request.provider}_fallback.mp4"
-            self._create_local_fallback_clip(
-                destination=fallback_path,
-                duration_seconds=max(6, min(request.duration_seconds, 20)),
-                aspect_ratio=request.aspect_ratio,
+            try:
+                self._create_local_fallback_clip(
+                    destination=fallback_path,
+                    duration_seconds=max(6, min(request.duration_seconds, 20)),
+                    aspect_ratio=request.aspect_ratio,
+                )
+            except Exception as fallback_exc:
+                raise RuntimeError(
+                    f"provider_generation_failed: {exc}; local_fallback_failed: {fallback_exc}"
+                ) from fallback_exc
+            validation = validate_rendered_media(
+                fallback_path,
+                require_audio=request.include_audio,
+                min_duration_seconds=1.0,
             )
+            if not validation.is_valid:
+                raise RuntimeError(
+                    f"provider_generation_failed: {exc}; local_fallback_invalid: {validation.reason}"
+                )
             latency = time.monotonic() - start
             return VideoGenerationArtifact(
                 output_path=fallback_path,
@@ -84,7 +99,7 @@ class VideoGenerationService:
                 mode="local_fallback",
                 duration_seconds=max(6, min(request.duration_seconds, 20)),
                 latency_seconds=latency,
-                notes=[f"provider_generation_failed: {exc}"],
+                notes=[f"provider_generation_failed: {exc}", "local_fallback_applied"],
             )
 
     def generate(self, request: VideoGenerationRequest) -> VideoGenerationArtifact:
@@ -119,6 +134,15 @@ class VideoGenerationService:
         provider.download(job, output_path)
         if not output_path.exists() or output_path.stat().st_size == 0:
             raise RuntimeError("downloaded video artifact is missing or empty")
+        validation = validate_rendered_media(
+            output_path,
+            require_audio=request.include_audio,
+            min_duration_seconds=1.0,
+        )
+        if not validation.is_valid:
+            raise RuntimeError(
+                f"downloaded video artifact failed validation: {validation.reason}"
+            )
 
         latency = time.monotonic() - start
         notes.append(f"terminal_status={terminal_status}")
@@ -180,6 +204,5 @@ class VideoGenerationService:
         ]
         try:
             subprocess.run(cmd, check=True, capture_output=True)
-        except Exception:
-            # Last resort: non-empty artifact so downstream diagnostics can continue.
-            destination.write_bytes(b"local-fallback-video")
+        except Exception as exc:
+            raise RuntimeError(f"ffmpeg_fallback_render_failed: {exc}") from exc

@@ -1,4 +1,26 @@
 niches:
+  - niche_id: niche_f_religion_culture_legends_ghost_lore
+    display_name: "Religion, Culture, Legends and Ghost Lore"
+    formats:
+      - "short_60"
+      - "long_6_to_10"
+    source_policy: "Comparative educational storytelling that connects legend narratives with source-backed historical context and scholarly interpretation."
+    trend_triggers:
+      - "history behind famous legends"
+      - "myth vs historical evidence explained"
+      - "origin of ghost folklore by region"
+      - "archaeology and ancient mystery stories"
+      - "sacred symbols and historical meaning"
+      - "timeline of cultural myths across civilizations"
+    style_rules:
+      - "Start with one surprising historical question in the first 3 seconds."
+      - "Contrast folklore narrative with at least two source-backed historical viewpoints."
+      - "Use a clear timeline: origin, evolution, and modern interpretation."
+      - "Stay neutral and respectful across beliefs."
+      - "Do not present supernatural claims as verified facts."
+      - "End with one memorable fact and source attribution."
+    is_sensitive_topic: true
+
   - niche_id: niche_a_roblox_ugc_explainers
     display_name: "Roblox and UGC Explainers"
     formats:
@@ -83,21 +105,3 @@ niches:
       - "Lead with curiosity gap."
       - "Use date and source overlays."
       - "Prioritize factual clarity."
-
-  - niche_id: niche_f_religion_culture_legends_ghost_lore
-    display_name: "Religion, Culture, Legends and Ghost Lore"
-    formats:
-      - "short_60"
-      - "long_6_to_10"
-    source_policy: "Comparative educational storytelling with respectful framing and source-backed context."
-    trend_triggers:
-      - "religious stories explained"
-      - "cultural legends around the world"
-      - "ghost folklore origin"
-      - "mythology symbolism"
-      - "sacred traditions and meaning"
-    style_rules:
-      - "Stay neutral and respectful across beliefs."
-      - "Do not present supernatural claims as verified facts."
-      - "Include disclaimer and source attribution."
-    is_sensitive_topic: true

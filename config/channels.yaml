@@ -1,4 +1,26 @@
 channels:
+  - channel_profile_id: legends_lore_culture
+    channel_name: "Religion, Culture, Legends and Ghost Lore"
+    oauth_client_secrets_file: "client_secrets.json"
+    token_store_key: "legends_lore_culture"
+    timezone: "Asia/Kolkata"
+    default_privacy_status: "private"
+    niches:
+      - niche_f_religion_culture_legends_ghost_lore
+      - niche_e_micro_doc_public_domain
+      - niche_c_internet_culture_context
+    schedule_windows:
+      - day_of_week: tuesday
+        start_hour: 17
+        end_hour: 21
+      - day_of_week: thursday
+        start_hour: 17
+        end_hour: 21
+      - day_of_week: sunday
+        start_hour: 11
+        end_hour: 15
+    fallback_hours: [9, 18, 20]
+    
   - channel_profile_id: channel_gaming_tech
     channel_name: "Gaming Tech Pulse"
     oauth_client_secrets_file: "client_secrets.json"
@@ -19,28 +41,6 @@ channels:
         start_hour: 10
         end_hour: 14
     fallback_hours: [12, 19, 21]
-
-  - channel_profile_id: channel_culture_trends
-    channel_name: "Culture Context Studio"
-    oauth_client_secrets_file: "client_secrets.json"
-    token_store_key: "channel_culture_trends"
-    timezone: "Asia/Kolkata"
-    default_privacy_status: "private"
-    niches:
-      - niche_c_internet_culture_context
-      - niche_e_micro_doc_public_domain
-      - niche_f_religion_culture_legends_ghost_lore
-    schedule_windows:
-      - day_of_week: tuesday
-        start_hour: 17
-        end_hour: 21
-      - day_of_week: thursday
-        start_hour: 17
-        end_hour: 21
-      - day_of_week: sunday
-        start_hour: 11
-        end_hour: 15
-    fallback_hours: [9, 18, 20]
 
   - channel_profile_id: channel_practical_safety
     channel_name: "Practical Safety Desk"

@@ -104,11 +104,20 @@ class PublicDomainMicroDocEngine(NicheEngine):
 class ReligionCultureGhostLoreEngine(NicheEngine):
     def build_outline(self, seed: TrendSeed) -> List[str]:
         return [
-            f"Cultural context for {seed.keyword}",
-            "Compare at least two interpretations across communities",
-            "Legend or ghost-lore narrative with source references",
-            "Respectful takeaway: symbolism, ethics, and modern impact",
+            f"Cold open: the most surprising claim behind {seed.keyword}",
+            "Trace the earliest documented references and historical timeline",
+            "Compare how the legend changed across at least two cultures or regions",
+            "Separate source-backed facts from folklore interpretation",
+            "Close with modern cultural meaning and one memorable evidence-backed fact",
         ]
+
+    def build_brief(self, channel_profile_id: str, seed: TrendSeed) -> ContentBrief:
+        brief = super().build_brief(channel_profile_id, seed)
+        brief.working_title = f"History vs Legend: {seed.keyword.title()}"
+        brief.hook = (
+            f"What if the real history behind {seed.keyword} is even more fascinating than the legend?"
+        )
+        return brief
 
     def build_disclaimers(self) -> List[str]:
         return [

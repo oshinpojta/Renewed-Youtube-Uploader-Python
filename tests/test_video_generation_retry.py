@@ -3,7 +3,9 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from src.media.validation import MediaValidationResult
 from src.media.providers.base import ProviderVideoJob, ProviderVideoRequest, VideoGenerationProvider
 from src.media.video_generation_service import VideoGenerationRequest, VideoGenerationService
 
@@ -50,7 +52,16 @@ class VideoGenerationRetryTests(unittest.TestCase):
                 duration_seconds=8,
                 aspect_ratio="9:16",
             )
-            artifact = service.generate(request)
+            with patch(
+                "src.media.video_generation_service.validate_rendered_media",
+                return_value=MediaValidationResult(
+                    is_valid=True,
+                    has_video=True,
+                    has_audio=True,
+                    duration_seconds=8.0,
+                ),
+            ):
+                artifact = service.generate(request)
 
             self.assertEqual(artifact.mode, "provider_api")
             self.assertGreaterEqual(fake_provider.poll_calls, 2)

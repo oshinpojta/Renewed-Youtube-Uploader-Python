@@ -53,23 +53,30 @@ class MediaFactory:
             concat_file = self.config.output_dir / f"{brief.brief_id}_concat.txt"
             concat_lines = [f"file '{clip.as_posix()}'" for clip in source_clips]
             concat_file.write_text("\n".join(concat_lines), encoding="utf-8")
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                str(concat_file),
-                "-c",
-                "copy",
-                str(output_path),
-            ]
-            subprocess.run(cmd, check=True, capture_output=True)
-            concat_file.unlink(missing_ok=True)
-            duration = self._probe_duration(output_path) or self.config.default_duration_seconds
-            generation_mode = "ffmpeg_concat"
+            try:
+                cmd = [
+                    "ffmpeg",
+                    "-y",
+                    "-f",
+                    "concat",
+                    "-safe",
+                    "0",
+                    "-i",
+                    str(concat_file),
+                    "-c",
+                    "copy",
+                    str(output_path),
+                ]
+                subprocess.run(cmd, check=True, capture_output=True)
+                duration = self._probe_duration(output_path) or self.config.default_duration_seconds
+                generation_mode = "ffmpeg_concat"
+            except Exception as exc:
+                output_path.unlink(missing_ok=True)
+                duration = requested_duration
+                generation_mode = "render_failed"
+                generation_notes = [f"ffmpeg_concat_failed: {exc}"]
+            finally:
+                concat_file.unlink(missing_ok=True)
         else:
             prompt = self._build_generation_prompt(brief, generated_script)
             if (
@@ -82,33 +89,41 @@ class MediaFactory:
                     duration_seconds=requested_duration,
                     require_audio=require_audio,
                 )
-                request = VideoGenerationRequest(
-                    request_id=brief.brief_id,
-                    provider=selection.provider,
-                    model=selection.model,
-                    prompt=prompt,
-                    duration_seconds=requested_duration,
-                    aspect_ratio="9:16"
-                    if "shorts" in " ".join(brief.target_formats).lower()
-                    else "16:9",
-                    include_audio=require_audio,
-                )
-                artifact = self.config.video_generation_service.generate_with_fallback(request)
-                output_path = artifact.output_path
-                generation_provider = artifact.provider
-                generation_model = artifact.model
-                generation_mode = artifact.mode
-                generation_task_id = artifact.task_id
-                render_latency_seconds = artifact.latency_seconds
-                generation_notes = selection.notes + artifact.notes
-                duration = artifact.duration_seconds
+                generation_provider = selection.provider
+                generation_model = selection.model
+                try:
+                    request = VideoGenerationRequest(
+                        request_id=brief.brief_id,
+                        provider=selection.provider,
+                        model=selection.model,
+                        prompt=prompt,
+                        duration_seconds=requested_duration,
+                        aspect_ratio="9:16"
+                        if "shorts" in " ".join(brief.target_formats).lower()
+                        else "16:9",
+                        include_audio=require_audio,
+                    )
+                    artifact = self.config.video_generation_service.generate_with_fallback(request)
+                    output_path = artifact.output_path
+                    generation_provider = artifact.provider
+                    generation_model = artifact.model
+                    generation_mode = artifact.mode
+                    generation_task_id = artifact.task_id
+                    render_latency_seconds = artifact.latency_seconds
+                    generation_notes = selection.notes + artifact.notes
+                    duration = artifact.duration_seconds
+                except Exception as exc:
+                    output_path.unlink(missing_ok=True)
+                    duration = requested_duration
+                    generation_mode = "render_failed"
+                    generation_notes = selection.notes + [f"model_generation_failed: {exc}"]
             else:
-                # Keep artifacts non-empty so pipeline diagnostics can continue safely.
-                output_path.write_bytes(
-                    b"placeholder-render-output"
-                    + (generated_script.title.encode("utf-8") if generated_script else b"")
-                )
+                output_path.unlink(missing_ok=True)
                 duration = requested_duration
+                generation_mode = "render_failed"
+                generation_notes = [
+                    "media generation is disabled or model service configuration is incomplete"
+                ]
 
         return RenderedMedia(
             media_path=str(output_path),
